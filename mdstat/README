@@ -1,1 +1,6 @@
-Mail Delivery Statistics Tool (mdstat) is an easy way to notify you the mail delivery result via emails. By counting the result of the delivery, mdstat can report the statistics of the status and its percentage bentifit from HTML.
+Mail Delivery Statistics Tool (mdstat) is an easy way to inform you the working
+result of the SMTP daemon on your server via HTML formatted report.
+By counting the SMTP mail delivery result log, mdstat can report the statistics 
+of the delivery status and percentage information in an HTML-style table.
+An individual configuration file is seperated to provide more flexible of the 
+tool.
