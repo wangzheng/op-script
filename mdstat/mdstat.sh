@@ -5,7 +5,10 @@
 #
 # wangzheng.gz@gmail.com
 #
-# 
+# Revision History
+#
+# 2012/04/11 - 1.00
+#   Original Release
 # 
 
 # =====================
@@ -25,10 +28,10 @@ WORKING_DIR=${WORKING_DIR:-"tmp"}
 STAT_DAYS=${STAT_DAYS:-"15"}
 
 # The sendemail agent script location, default is located at "/PATH/TO/CURRENT/DIR/sendEmail"
-STAT_SEMA=${STAT_RCVER:-"./sendEmail"}
+STAT_SEMA=${STAT_SEMA:-"./sendEmail"}
 
 # The mail server (SMTP Server) used to send the result, default is send via "localhost"
-STAT_SMTP=${STAT_RCVER:-"localhost"}
+STAT_SMTP=${STAT_SMTP:-"localhost"}
 
 # The mail sender of the result, default is send as "localhost@localdomain"
 STAT_SENDER=${STAT_SENDER:-"localhost@localdomain"}
@@ -37,7 +40,7 @@ STAT_SENDER=${STAT_SENDER:-"localhost@localdomain"}
 STAT_RCVER=${STAT_RCVER:-"localhost@localdomain"}
 
 # The mail subjuct of the result, including server IP address is recommended, default is "MDStat Result"
-STAT_SUBJ=${STAT_RCVER:-"MDStat Result"}
+STAT_SUBJ=${STAT_SUBJ:-"MDStat Result"}
 
 # =====================
 # Preprocessing Section
@@ -53,12 +56,12 @@ LOG_DATE=`date -d "1 day ago" "+%b %e"`
 LOGFILE_DATE=`date -d "1 day ago" "+%Y-%m-%d"`
 LOG_RESULT=$WORKING_DIR/$LOGFILE_DATE.log
 
-[ -ne $LOG_DIR ] && mkdir $LOG_DIR
-
 # Preparing the mail delivery log
+[ -e $LOG_DIR ] || mkdir $LOG_DIR
+
 cat /var/log/maillog* > $LOG_ALL
-grep $LOG_DATE $LOG_ALL > $LOG_ORG
-grep "failure" $LOG_ORG | awk '{print $10}' > $LOG_FAL
+grep "$LOG_DATE" $LOG_ALL > $LOG_ORG
+grep "failure" $LOG_ORG > $LOG_FAL
 
 # ================
 # Counting Section
@@ -98,7 +101,7 @@ NUM_RATE_SUCCESS_NOT_FAIL_USER=`echo "scale=3;$NUM_SUCCESS/$NUM_TOTAL_NOT_FAIL_U
 # =================
 
 # Log to daily result file
-echo "$NUM_TOTAL $NUM_SUCCESS $NUM_FAILURE $NUM_FAIL_USER $NUM_FAIL_SPAM $NUM_FAIL_MISC $NUM_RATE_SUCCESS $NUM_RATE_SUCCESS_NOT_FAIL_USER" > $LOG_RESULT
+echo "$LOGFILE_DATE $NUM_TOTAL $NUM_SUCCESS $NUM_FAILURE $NUM_FAIL_USER $NUM_FAIL_SPAM $NUM_FAIL_MISC $NUM_RATE_SUCCESS $NUM_RATE_SUCCESS_NOT_FAIL_USER" > $LOG_RESULT
 
 # Log to HTML report
 echo "<html>" > $STAT_RESULT
@@ -118,13 +121,15 @@ echo "  </TR>" >> $STAT_RESULT
 
 LOG_ROTATE=1
 while
-	[ $LOG_ROTATE -le STAT_DAYS ]
+	[ $LOG_ROTATE -le $STAT_DAYS ]
 do
   LOGFILE_DATE=`date -d "$LOG_ROTATE day ago" "+%Y-%m-%d"`
-	echo "  <TR>" >> $STAT_RESULT
-	awk '{for (i=1;i<=NF;i++) {printf "    <TD>"; printf $i; printf "</TD>\n";}}' $LOG_RESULT >> $STAT_RESULT
-	echo "  </TR>" >> $STAT_RESULT
-	LOG_ROTATE=$[$LOG_ROTATE+1]
+  LOG_RESULT=$WORKING_DIR/$LOGFILE_DATE.log
+  [ -e $LOG_RESULT ] || continue
+  echo "  <TR>" >> $STAT_RESULT
+  awk '{for (i=1;i<=NF;i++) {printf "    <TD>"; printf $i; printf "</TD>\n";}}' $LOG_RESULT >> $STAT_RESULT
+  echo "  </TR>" >> $STAT_RESULT
+  ((LOG_ROTATE++))
 done
 
 echo " </TBODY></TABLE>" >> $STAT_RESULT
@@ -135,7 +140,7 @@ echo "</html>" >> $STAT_RESULT
 # Notification Section
 # ====================
 
-$STAT_SEMA -f $STAT_SENDER -t $STAT_RCVER -u $STAT_SUBJ -s STAT_SMTP -o message-file=$STAT_RESULT -o message-charset=gb2312
+$STAT_SEMA -f $STAT_SENDER -t $STAT_RCVER -u $STAT_SUBJ -s $STAT_SMTP -o message-file=$STAT_RESULT -o message-charset=gb2312
 
 
 # ======================
@@ -143,6 +148,8 @@ $STAT_SEMA -f $STAT_SENDER -t $STAT_RCVER -u $STAT_SUBJ -s STAT_SMTP -o message-
 # ======================
 
 # Cleen-up
-LOGFILE_DATE=`date -d "$STAT_DAYS+1 day ago" "+%Y-%m-%d"`
+((STAT_DAYS_PLUS = STAT_DAYS + 1))
+LOGFILE_DATE=`date -d "$STAT_DAYS_PLUS day ago" "+%Y-%m-%d"`
+LOG_RESULT=$WORKING_DIR/$LOGFILE_DATE.log
 rm -rf $LOG_RESULT
 rm -rf $LOG_DIR/log*.log
