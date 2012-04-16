@@ -4,3 +4,5 @@ By counting the SMTP mail delivery result log, mdstat can report the statistics
 of the delivery status and percentage information in an HTML-style table.
 An individual configuration file is seperated to provide more flexible of the 
 tool.
+
+Note: If you run mdstat via crond, pay attention to the configuration file location in the script file, or the configuration file will not be load correctly.
